@@ -1,0 +1,49 @@
+name: Model 1 CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Validate Python code
+        run: |
+          python -m compileall app.py
+
+      - name: Build Docker image
+        run: |
+          docker build -t model-1:latest .
+
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name model-1-container \
+            -p 8000:8000 \
+            model-1:latest
+
+      - name: Check application health
+        run: |
+          sleep 5
+          curl --fail http://localhost:8000/health
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker stop model-1-container || true
+          docker rm model-1-container || true
